@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { NEGOCIO, HORARIO_TEXTO } from "@/lib/negocio";
+import CreditoPor2Duros from "./CreditoPor2Duros";
 
 export default function Footer() {
   return (
@@ -34,18 +35,7 @@ export default function Footer() {
           <p className="max-w-xl text-xs text-cream/30">
             Ninguna persona, dirección ni teléfono son reales. Los precios y servicios son ilustrativos.
           </p>
-          <p className="text-xs text-cream/40">
-            Desarrollado por{" "}
-            <a
-              href="https://www.por2duros.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-semibold tracking-wide text-copper transition hover:text-copper-light"
-            >
-              Por 2 Duros
-            </a>{" "}
-            <span className="text-cream/30">— cortando código al milímetro ✂️</span>
-          </p>
+          <CreditoPor2Duros />
         </div>
       </div>
     </footer>

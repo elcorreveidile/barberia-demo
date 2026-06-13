@@ -33,7 +33,14 @@ export default function Footer() {
           </p>
           <p className="text-xs text-cream/40">
             Desarrollado por{" "}
-            <span className="font-semibold tracking-wide text-copper">Por 2 Duros</span>{" "}
+            <a
+              href="https://www.por2duros.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-semibold tracking-wide text-copper transition hover:text-copper-light"
+            >
+              Por 2 Duros
+            </a>{" "}
             <span className="text-cream/30">— cortando código al milímetro ✂️</span>
           </p>
         </div>

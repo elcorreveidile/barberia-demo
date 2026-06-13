@@ -29,7 +29,10 @@ export default function Footer() {
             <span className="recorte-tijeras">✂️</span>
           </div>
           <p className="text-xs text-cream/40">
-            © {new Date().getFullYear()} {NEGOCIO.nombre} · {NEGOCIO.ciudad}
+            © {new Date().getFullYear()} {NEGOCIO.nombre} · {NEGOCIO.ciudad}. Negocio ficticio — proyecto demo. · v1.0
+          </p>
+          <p className="max-w-xl text-xs text-cream/30">
+            Ninguna persona, dirección ni teléfono son reales. Los precios y servicios son ilustrativos.
           </p>
           <p className="text-xs text-cream/40">
             Desarrollado por{" "}

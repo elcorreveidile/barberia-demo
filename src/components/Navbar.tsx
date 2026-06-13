@@ -9,6 +9,7 @@ const enlaces = [
   { href: "/equipo", label: "Equipo" },
   { href: "/galeria", label: "Galería" },
   { href: "/contacto", label: "Contacto" },
+  { href: "/mis-citas", label: "Mis citas" },
 ];
 
 export default function Navbar() {

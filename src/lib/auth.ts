@@ -78,3 +78,43 @@ export async function sesionActual(): Promise<string | null> {
   if (!esAdmin(email)) return null;
   return email;
 }
+
+// ===== Sesión de CLIENTE (área "Mis citas") =====
+// Independiente del admin: cookie distinta y sin lista de autorizados.
+// La identidad es el email o teléfono con el que reservó.
+const COOKIE_CLIENTE = "filo_cliente";
+// Prefijo con el que se guardan los magic tokens de cliente en magic_tokens.email,
+// para distinguirlos de los de admin sin tocar el esquema.
+export const PREFIJO_CLIENTE = "cliente:";
+
+export async function crearSesionCliente(identificador: string) {
+  const expira = Date.now() + DURACION_SESION_MS;
+  const payload = `${identificador}|${expira}`;
+  const cookieStore = await cookies();
+  cookieStore.set(COOKIE_CLIENTE, firmar(payload), {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: DURACION_SESION_MS / 1000,
+  });
+}
+
+export async function cerrarSesionCliente() {
+  const cookieStore = await cookies();
+  cookieStore.delete(COOKIE_CLIENTE);
+}
+
+// Devuelve el identificador (email o teléfono) del cliente, o null.
+export async function sesionCliente(): Promise<string | null> {
+  const cookieStore = await cookies();
+  const valor = cookieStore.get(COOKIE_CLIENTE)?.value;
+  if (!valor) return null;
+  const payload = verificar(valor);
+  if (!payload) return null;
+  const idx = payload.lastIndexOf("|");
+  const identificador = payload.slice(0, idx);
+  const expira = Number(payload.slice(idx + 1));
+  if (!identificador || expira < Date.now()) return null;
+  return identificador;
+}

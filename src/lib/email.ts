@@ -50,6 +50,26 @@ export async function enviarMagicLink(para: string, enlace: string) {
   });
 }
 
+export async function enviarEnlaceCitas(para: string, enlace: string) {
+  const c = cliente();
+  const cuerpo = `
+    <p style="color:#cfc7ba;line-height:1.6;">Pulsa el botón para ver y gestionar tus citas. El enlace caduca en 15 minutos y solo se puede usar una vez.</p>
+    <p style="text-align:center;margin:28px 0;">
+      <a href="${enlace}" style="background:#B68D40;color:#121212;text-decoration:none;padding:14px 28px;border-radius:8px;font-weight:700;display:inline-block;">Ver mis citas</a>
+    </p>
+    <p style="color:#8a8178;font-size:13px;">Si no has solicitado este acceso, ignora este correo.</p>`;
+  if (!c) {
+    console.log(`\n[EMAIL omitido — sin RESEND_API_KEY]\nEnlace "mis citas" para ${para}:\n${enlace}\n`);
+    return;
+  }
+  await c.emails.send({
+    from: FROM(),
+    to: para,
+    subject: `Tus citas · ${NEGOCIO.nombre}`,
+    html: marco("Tus citas", cuerpo),
+  });
+}
+
 export async function enviarConfirmacionCita(opts: {
   para: string;
   nombre: string;

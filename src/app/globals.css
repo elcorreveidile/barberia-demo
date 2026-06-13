@@ -26,6 +26,46 @@ body {
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
 }
 
+/* Guiño "Por 2 Duros": unas tijeras recortando una línea de puntos */
+@keyframes recorte {
+  0% {
+    left: 0;
+    transform: translateY(-50%) rotate(0deg);
+  }
+  48% {
+    transform: translateY(-50%) rotate(-14deg);
+  }
+  50% {
+    transform: translateY(-50%) rotate(2deg);
+  }
+  52% {
+    transform: translateY(-50%) rotate(-14deg);
+  }
+  100% {
+    left: calc(100% - 1.1rem);
+    transform: translateY(-50%) rotate(0deg);
+  }
+}
+.recorte-linea {
+  position: relative;
+  height: 1px;
+  width: 150px;
+  border-top: 1px dashed rgba(182, 141, 64, 0.45);
+}
+.recorte-tijeras {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  font-size: 0.95rem;
+  line-height: 1;
+  animation: recorte 6s ease-in-out infinite alternate;
+}
+@media (prefers-reduced-motion: reduce) {
+  .recorte-tijeras {
+    animation: none;
+  }
+}
+
 @layer components {
   .btn-copper {
     @apply inline-flex items-center justify-center gap-2 rounded-md bg-copper px-6 py-3 font-semibold text-ink transition hover:bg-copper-light disabled:cursor-not-allowed disabled:opacity-50;

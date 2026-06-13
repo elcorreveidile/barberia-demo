@@ -23,10 +23,27 @@ export default function Footer() {
           </Link>
         </div>
       </div>
-      <div className="border-t border-ink-600/40 py-5">
-        <p className="seccion text-center text-xs text-cream/40">
-          © {new Date().getFullYear()} {NEGOCIO.nombre} · {NEGOCIO.ciudad}
-        </p>
+      <div className="border-t border-ink-600/40 py-6">
+        <div className="seccion flex flex-col items-center gap-3 text-center">
+          <div className="recorte-linea" aria-hidden="true">
+            <span className="recorte-tijeras">✂️</span>
+          </div>
+          <p className="text-xs text-cream/40">
+            © {new Date().getFullYear()} {NEGOCIO.nombre} · {NEGOCIO.ciudad}
+          </p>
+          <p className="text-xs text-cream/40">
+            Desarrollado por{" "}
+            <a
+              href="https://www.por2duros.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-semibold tracking-wide text-copper transition hover:text-copper-light"
+            >
+              Por 2 Duros
+            </a>{" "}
+            <span className="text-cream/30">— cortando código al milímetro ✂️</span>
+          </p>
+        </div>
       </div>
     </footer>
   );

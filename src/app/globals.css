@@ -1,0 +1,48 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+body {
+  background-color: #121212;
+  color: #f5f0e6;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Textura sutil de fondo */
+.bg-textura {
+  background-image: radial-gradient(
+      circle at 20% 0%,
+      rgba(182, 141, 64, 0.08),
+      transparent 45%
+    ),
+    radial-gradient(circle at 80% 100%, rgba(182, 141, 64, 0.06), transparent 40%);
+}
+
+.bg-grano {
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+}
+
+@layer components {
+  .btn-copper {
+    @apply inline-flex items-center justify-center gap-2 rounded-md bg-copper px-6 py-3 font-semibold text-ink transition hover:bg-copper-light disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 rounded-md border border-copper/50 px-6 py-3 font-semibold text-copper-light transition hover:border-copper hover:bg-copper/10;
+  }
+  .seccion {
+    @apply mx-auto w-full max-w-6xl px-5 sm:px-8;
+  }
+  .titulo-display {
+    @apply font-display font-bold tracking-tight text-cream;
+  }
+  .etiqueta {
+    @apply text-xs font-semibold uppercase tracking-[0.25em] text-copper;
+  }
+  .tarjeta {
+    @apply rounded-xl border border-ink-600/60 bg-ink-800/80 backdrop-blur;
+  }
+}

@@ -3,6 +3,7 @@ import { getDb, schema } from "@/db";
 import { dentroDeHorario } from "./disponibilidad";
 import { enviarConfirmacionCita, enviarActualizacionCliente } from "./email";
 import { avisarNuevaCita, avisarCitaActualizada } from "./avisos";
+import { crearEnlaceGestion } from "./accesoCliente";
 import { formatoLargo } from "./fecha";
 
 export type ResultadoReserva =
@@ -78,13 +79,19 @@ export async function crearCita(opts: {
 
     // Confirmación al cliente (solo si hay email). No bloquea la reserva.
     if (opts.enviarEmail && opts.clienteEmail) {
-      enviarConfirmacionCita({
-        para: opts.clienteEmail,
-        nombre: opts.clienteNombre,
-        servicio: servicio.nombre,
-        profesional: prof?.nombre ?? "",
-        cuando,
-      }).catch((e) => console.error("Error enviando email de confirmación:", e));
+      const emailCliente = opts.clienteEmail;
+      crearEnlaceGestion(emailCliente)
+        .then((enlaceGestion) =>
+          enviarConfirmacionCita({
+            para: emailCliente,
+            nombre: opts.clienteNombre,
+            servicio: servicio.nombre,
+            profesional: prof?.nombre ?? "",
+            cuando,
+            enlaceGestion: enlaceGestion ?? undefined,
+          })
+        )
+        .catch((e) => console.error("Error enviando email de confirmación:", e));
     }
 
     // Aviso al negocio en cada cita nueva, salvo las creadas desde el panel
@@ -159,14 +166,23 @@ function notificarCambio(
 ) {
   const cuando = formatoLargo(new Date(cuandoFecha));
   if (datos.cita.clienteEmail) {
-    enviarActualizacionCliente({
-      para: datos.cita.clienteEmail,
-      nombre: datos.cita.clienteNombre,
-      servicio: datos.servicio.nombre,
-      profesional: datos.profesional.nombre,
-      cuando,
-      accion,
-    }).catch((e) => console.error("Error email actualización cliente:", e));
+    const emailCliente = datos.cita.clienteEmail;
+    // En cancelaciones no tiene sentido el enlace de gestión (no hay nada que gestionar).
+    const promesaEnlace =
+      accion === "movida" ? crearEnlaceGestion(emailCliente) : Promise.resolve(null);
+    promesaEnlace
+      .then((enlaceGestion) =>
+        enviarActualizacionCliente({
+          para: emailCliente,
+          nombre: datos.cita.clienteNombre,
+          servicio: datos.servicio.nombre,
+          profesional: datos.profesional.nombre,
+          cuando,
+          accion,
+          enlaceGestion: enlaceGestion ?? undefined,
+        })
+      )
+      .catch((e) => console.error("Error email actualización cliente:", e));
   }
   if (opts?.avisarNegocio !== false) {
     avisarCitaActualizada(

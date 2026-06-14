@@ -124,6 +124,7 @@ export async function enviarActualizacionCliente(opts: {
   profesional: string;
   cuando: string;
   accion: "movida" | "cancelada";
+  enlaceGestion?: string;
 }) {
   const c = cliente();
   const titulo = opts.accion === "cancelada" ? "Cita cancelada" : "Cita reprogramada";
@@ -142,6 +143,7 @@ export async function enviarActualizacionCliente(opts: {
       <tr><td style="padding:6px 0;color:#8a8178;">Profesional</td><td style="text-align:right;">${opts.profesional}</td></tr>
       <tr><td style="padding:6px 0;color:#8a8178;">${opts.accion === "cancelada" ? "Era" : "Cuándo"}</td><td style="text-align:right;color:#B68D40;font-weight:700;">${opts.cuando}</td></tr>
     </table>
+    ${botonGestion(opts.enlaceGestion)}
     ${pie}`;
   if (!c) {
     console.log(`\n[EMAIL omitido — sin RESEND_API_KEY]\nActualización (${opts.accion}) para ${opts.para}: ${opts.servicio} · ${opts.cuando}\n`);
@@ -155,12 +157,21 @@ export async function enviarActualizacionCliente(opts: {
   });
 }
 
+function botonGestion(enlace?: string): string {
+  if (!enlace) return "";
+  return `
+    <p style="text-align:center;margin:24px 0;">
+      <a href="${enlace}" style="background:#B68D40;color:#121212;text-decoration:none;padding:12px 24px;border-radius:8px;font-weight:700;display:inline-block;">Ver / gestionar mi cita</a>
+    </p>`;
+}
+
 export async function enviarConfirmacionCita(opts: {
   para: string;
   nombre: string;
   servicio: string;
   profesional: string;
   cuando: string;
+  enlaceGestion?: string;
 }) {
   const c = cliente();
   const cuerpo = `
@@ -170,7 +181,8 @@ export async function enviarConfirmacionCita(opts: {
       <tr><td style="padding:6px 0;color:#8a8178;">Profesional</td><td style="text-align:right;">${opts.profesional}</td></tr>
       <tr><td style="padding:6px 0;color:#8a8178;">Cuándo</td><td style="text-align:right;color:#B68D40;font-weight:700;">${opts.cuando}</td></tr>
     </table>
-    <p style="color:#8a8178;font-size:13px;">¿Necesitas cambiarla? Responde a este correo o escríbenos por WhatsApp.</p>`;
+    ${botonGestion(opts.enlaceGestion)}
+    <p style="color:#8a8178;font-size:13px;">¿Necesitas cambiarla? Pulsa el botón de arriba, responde a este correo o escríbenos por WhatsApp.</p>`;
   if (!c) {
     console.log(`\n[EMAIL omitido — sin RESEND_API_KEY]\nConfirmación para ${opts.para}: ${opts.servicio} · ${opts.cuando}\n`);
     return;

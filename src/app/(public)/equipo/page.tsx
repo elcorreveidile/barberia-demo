@@ -25,7 +25,7 @@ export default async function EquipoPage() {
           <div key={p.id} className="tarjeta overflow-hidden">
             <div className="relative aspect-[4/3]">
               {p.fotoUrl ? (
-                <Image src={p.fotoUrl} alt={p.nombre} fill className="object-cover" />
+                <Image src={p.fotoUrl} alt={p.nombre} fill className="object-cover object-top" />
               ) : (
                 <div className="flex h-full items-center justify-center bg-ink-700 text-cream/30">
                   Sin foto

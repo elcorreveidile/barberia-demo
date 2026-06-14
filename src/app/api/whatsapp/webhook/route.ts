@@ -4,6 +4,17 @@ import { enviarWhatsApp } from "@/lib/twilio";
 
 export const dynamic = "force-dynamic";
 
+// Respuesta TwiML vacía: le dice a Twilio "no envíes nada como respuesta del
+// webhook". El mensaje real al cliente ya se envía por la API de Twilio
+// (enviarWhatsApp). Si devolviéramos texto plano, el sandbox lo reenviaría
+// como un segundo mensaje (el "ok" fantasma).
+function twimlVacio() {
+  return new NextResponse(
+    '<?xml version="1.0" encoding="UTF-8"?><Response></Response>',
+    { status: 200, headers: { "Content-Type": "text/xml" } }
+  );
+}
+
 // Webhook entrante de WhatsApp.
 //
 // DEMO: configurado para el SANDBOX de Twilio para WhatsApp, que envía un
@@ -32,7 +43,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (!from || !body.trim()) {
-      return new NextResponse("ok", { status: 200 });
+      return twimlVacio();
     }
 
     const respuesta = await responderWhatsApp({ telefono: from, mensaje: body });
@@ -41,11 +52,11 @@ export async function POST(req: NextRequest) {
     // devolver TwiML, pero enviar por API funciona igual en sandbox y producción.)
     await enviarWhatsApp(from, respuesta);
 
-    return new NextResponse("ok", { status: 200 });
+    return twimlVacio();
   } catch (e) {
     console.error("Error en webhook de WhatsApp:", e);
     // Devolvemos 200 para que Twilio no reintente en bucle.
-    return new NextResponse("ok", { status: 200 });
+    return twimlVacio();
   }
 }
 

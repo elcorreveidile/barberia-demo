@@ -80,11 +80,22 @@ export async function enviarAvisoNegocio(
     clienteTelefono: string;
     clienteEmail: string | null;
     origen: string;
-  }
+  },
+  accion: "nueva" | "movida" | "cancelada" = "nueva"
 ) {
   const cli = cliente();
+  const titulos = {
+    nueva: "Nueva cita",
+    movida: "Cita reprogramada",
+    cancelada: "Cita cancelada",
+  } as const;
+  const intro = {
+    nueva: `Nueva cita reservada (vía <b>${c.origen}</b>):`,
+    movida: `Una cita se ha reprogramado (vía <b>${c.origen}</b>):`,
+    cancelada: `Una cita se ha cancelado (vía <b>${c.origen}</b>):`,
+  } as const;
   const cuerpo = `
-    <p style="color:#cfc7ba;line-height:1.6;">Nueva cita reservada (vía <b>${c.origen}</b>):</p>
+    <p style="color:#cfc7ba;line-height:1.6;">${intro[accion]}</p>
     <table style="width:100%;color:#F5F0E6;border-collapse:collapse;margin:16px 0;">
       <tr><td style="padding:6px 0;color:#8a8178;">Servicio</td><td style="text-align:right;">${c.servicio}</td></tr>
       <tr><td style="padding:6px 0;color:#8a8178;">Profesional</td><td style="text-align:right;">${c.profesional}</td></tr>
@@ -94,14 +105,53 @@ export async function enviarAvisoNegocio(
       ${c.clienteEmail ? `<tr><td style="padding:6px 0;color:#8a8178;">Email</td><td style="text-align:right;">${c.clienteEmail}</td></tr>` : ""}
     </table>`;
   if (!cli) {
-    console.log(`\n[EMAIL omitido — sin RESEND_API_KEY]\nAviso al negocio (${para}): ${c.servicio} · ${c.cuando} · ${c.clienteNombre}\n`);
+    console.log(`\n[EMAIL omitido — sin RESEND_API_KEY]\nAviso al negocio (${para}) [${accion}]: ${c.servicio} · ${c.cuando} · ${c.clienteNombre}\n`);
     return;
   }
   await cli.emails.send({
     from: FROM(),
     to: para,
-    subject: `Nueva cita · ${c.cuando} · ${c.clienteNombre}`,
-    html: marco("Nueva cita", cuerpo),
+    subject: `${titulos[accion]} · ${c.cuando} · ${c.clienteNombre}`,
+    html: marco(titulos[accion], cuerpo),
+  });
+}
+
+// Email al cliente cuando su cita se mueve o se cancela.
+export async function enviarActualizacionCliente(opts: {
+  para: string;
+  nombre: string;
+  servicio: string;
+  profesional: string;
+  cuando: string;
+  accion: "movida" | "cancelada";
+}) {
+  const c = cliente();
+  const titulo = opts.accion === "cancelada" ? "Cita cancelada" : "Cita reprogramada";
+  const intro =
+    opts.accion === "cancelada"
+      ? `Hola ${opts.nombre}, tu cita ha sido <b>cancelada</b>:`
+      : `Hola ${opts.nombre}, tu cita se ha <b>reprogramado</b>. Nuevos datos:`;
+  const pie =
+    opts.accion === "cancelada"
+      ? `<p style="color:#8a8178;font-size:13px;">¿Quieres pedir otra? Reserva en la web o escríbenos por WhatsApp.</p>`
+      : `<p style="color:#8a8178;font-size:13px;">Si no reconoces este cambio, contáctanos.</p>`;
+  const cuerpo = `
+    <p style="color:#cfc7ba;line-height:1.6;">${intro}</p>
+    <table style="width:100%;color:#F5F0E6;border-collapse:collapse;margin:16px 0;">
+      <tr><td style="padding:6px 0;color:#8a8178;">Servicio</td><td style="text-align:right;">${opts.servicio}</td></tr>
+      <tr><td style="padding:6px 0;color:#8a8178;">Profesional</td><td style="text-align:right;">${opts.profesional}</td></tr>
+      <tr><td style="padding:6px 0;color:#8a8178;">${opts.accion === "cancelada" ? "Era" : "Cuándo"}</td><td style="text-align:right;color:#B68D40;font-weight:700;">${opts.cuando}</td></tr>
+    </table>
+    ${pie}`;
+  if (!c) {
+    console.log(`\n[EMAIL omitido — sin RESEND_API_KEY]\nActualización (${opts.accion}) para ${opts.para}: ${opts.servicio} · ${opts.cuando}\n`);
+    return;
+  }
+  await c.emails.send({
+    from: FROM(),
+    to: opts.para,
+    subject: `${titulo} · ${opts.cuando}`,
+    html: marco(titulo, cuerpo),
   });
 }
 

@@ -17,7 +17,7 @@ export async function PATCH(
   const body = await req.json().catch(() => ({}));
 
   if (body.inicio) {
-    const res = await moverCita(citaId, new Date(body.inicio));
+    const res = await moverCita(citaId, new Date(body.inicio), { avisarNegocio: false, origen: "panel" });
     if (!res.ok) {
       const status = res.motivo === "ocupado" ? 409 : 400;
       return NextResponse.json({ error: res.mensaje }, { status });
@@ -26,7 +26,7 @@ export async function PATCH(
   }
 
   if (body.estado === "cancelada") {
-    const ok = await cancelarCita(citaId);
+    const ok = await cancelarCita(citaId, { avisarNegocio: false, origen: "panel" });
     return NextResponse.json({ ok });
   }
 
@@ -41,6 +41,6 @@ export async function DELETE(
   const no = await exigirSesion();
   if (no) return no;
   const { id } = await params;
-  const ok = await cancelarCita(Number(id));
+  const ok = await cancelarCita(Number(id), { avisarNegocio: false, origen: "panel" });
   return NextResponse.json({ ok });
 }

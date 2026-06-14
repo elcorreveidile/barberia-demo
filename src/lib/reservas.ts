@@ -1,8 +1,8 @@
 import { and, eq, gte, ne } from "drizzle-orm";
 import { getDb, schema } from "@/db";
 import { dentroDeHorario } from "./disponibilidad";
-import { enviarConfirmacionCita } from "./email";
-import { avisarNuevaCita } from "./avisos";
+import { enviarConfirmacionCita, enviarActualizacionCliente } from "./email";
+import { avisarNuevaCita, avisarCitaActualizada } from "./avisos";
 import { formatoLargo } from "./fecha";
 
 export type ResultadoReserva =
@@ -115,19 +115,79 @@ export async function crearCita(opts: {
   }
 }
 
-export async function cancelarCita(citaId: number): Promise<boolean> {
+export async function cancelarCita(
+  citaId: number,
+  opts?: { avisarNegocio?: boolean; origen?: string }
+): Promise<boolean> {
   const db = getDb();
+  // Cargamos los datos antes de cancelar para poder avisar.
+  const datos = await datosCita(citaId);
   const res = await db
     .update(schema.citas)
     .set({ estado: "cancelada" })
     .where(eq(schema.citas.id, citaId))
     .returning({ id: schema.citas.id });
-  return res.length > 0;
+  if (res.length === 0) return false;
+
+  if (datos) notificarCambio(datos, "cancelada", datos.cita.inicio, opts);
+  return true;
+}
+
+// Carga cita + servicio + profesional (para los avisos).
+async function datosCita(citaId: number) {
+  const db = getDb();
+  const [fila] = await db
+    .select({
+      cita: schema.citas,
+      servicio: schema.servicios,
+      profesional: schema.profesionales,
+    })
+    .from(schema.citas)
+    .innerJoin(schema.servicios, eq(schema.servicios.id, schema.citas.servicioId))
+    .innerJoin(schema.profesionales, eq(schema.profesionales.id, schema.citas.profesionalId))
+    .where(eq(schema.citas.id, citaId));
+  return fila ?? null;
+}
+
+// Envía (fire-and-forget) los avisos de cambio: email al cliente (si tiene) y
+// aviso al negocio (salvo que se desactive, p. ej. cuando lo hace el panel).
+function notificarCambio(
+  datos: NonNullable<Awaited<ReturnType<typeof datosCita>>>,
+  accion: "movida" | "cancelada",
+  cuandoFecha: Date | string,
+  opts?: { avisarNegocio?: boolean; origen?: string }
+) {
+  const cuando = formatoLargo(new Date(cuandoFecha));
+  if (datos.cita.clienteEmail) {
+    enviarActualizacionCliente({
+      para: datos.cita.clienteEmail,
+      nombre: datos.cita.clienteNombre,
+      servicio: datos.servicio.nombre,
+      profesional: datos.profesional.nombre,
+      cuando,
+      accion,
+    }).catch((e) => console.error("Error email actualización cliente:", e));
+  }
+  if (opts?.avisarNegocio !== false) {
+    avisarCitaActualizada(
+      {
+        servicio: datos.servicio.nombre,
+        profesional: datos.profesional.nombre,
+        cuando,
+        clienteNombre: datos.cita.clienteNombre,
+        clienteTelefono: datos.cita.clienteTelefono,
+        clienteEmail: datos.cita.clienteEmail,
+        origen: opts?.origen ?? datos.cita.origen,
+      },
+      accion
+    ).catch((e) => console.error("Error aviso negocio actualización:", e));
+  }
 }
 
 export async function moverCita(
   citaId: number,
-  nuevoInicio: Date
+  nuevoInicio: Date,
+  opts?: { avisarNegocio?: boolean; origen?: string }
 ): Promise<ResultadoReserva> {
   const db = getDb();
   const [cita] = await db
@@ -152,6 +212,8 @@ export async function moverCita(
       .update(schema.citas)
       .set({ inicio: nuevoInicio, fin })
       .where(eq(schema.citas.id, citaId));
+    const datos = await datosCita(citaId);
+    if (datos) notificarCambio(datos, "movida", nuevoInicio, opts);
     return { ok: true, citaId };
   } catch (e) {
     if (esSolapamiento(e)) {

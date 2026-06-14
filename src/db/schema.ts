@@ -72,6 +72,9 @@ export const citas = pgTable(
     estado: text("estado").notNull().default("confirmada"), // confirmada | cancelada | pendiente_humano
     origen: text("origen").notNull().default("web"), // web | whatsapp | panel
     notas: text("notas").notNull().default(""),
+    // Recordatorios automáticos enviados (anti no-show).
+    recordatorio24hEnviado: boolean("recordatorio_24h_enviado").notNull().default(false),
+    recordatorio2hEnviado: boolean("recordatorio_2h_enviado").notNull().default(false),
     creadaEn: timestamp("creada_en", { withTimezone: true })
       .notNull()
       .defaultNow(),

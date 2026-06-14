@@ -70,6 +70,36 @@ export async function enviarEnlaceCitas(para: string, enlace: string) {
   });
 }
 
+export async function enviarRecordatorioCita(opts: {
+  para: string;
+  nombre: string;
+  servicio: string;
+  profesional: string;
+  cuando: string;
+  enlaceGestion?: string;
+}) {
+  const c = cliente();
+  const cuerpo = `
+    <p style="color:#cfc7ba;line-height:1.6;">Hola ${opts.nombre}, te recordamos tu próxima cita:</p>
+    <table style="width:100%;color:#F5F0E6;border-collapse:collapse;margin:16px 0;">
+      <tr><td style="padding:6px 0;color:#8a8178;">Servicio</td><td style="text-align:right;">${opts.servicio}</td></tr>
+      <tr><td style="padding:6px 0;color:#8a8178;">Profesional</td><td style="text-align:right;">${opts.profesional}</td></tr>
+      <tr><td style="padding:6px 0;color:#8a8178;">Cuándo</td><td style="text-align:right;color:#B68D40;font-weight:700;">${opts.cuando}</td></tr>
+    </table>
+    ${botonGestion(opts.enlaceGestion)}
+    <p style="color:#8a8178;font-size:13px;">¿No puedes venir? Cancela o cámbiala desde el botón, respondiendo a este correo o por WhatsApp.</p>`;
+  if (!c) {
+    console.log(`\n[EMAIL omitido — sin RESEND_API_KEY]\nRecordatorio para ${opts.para}: ${opts.servicio} · ${opts.cuando}\n`);
+    return;
+  }
+  await c.emails.send({
+    from: FROM(),
+    to: opts.para,
+    subject: `Recordatorio de tu cita · ${opts.cuando}`,
+    html: marco("Recordatorio de tu cita", cuerpo),
+  });
+}
+
 export async function enviarAvisoNegocio(
   para: string,
   c: {

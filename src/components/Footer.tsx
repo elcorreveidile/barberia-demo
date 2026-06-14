@@ -4,7 +4,7 @@ import CreditoPor2Duros from "./CreditoPor2Duros";
 
 export default function Footer() {
   return (
-    <footer className="mt-24 border-t border-ink-600/50 bg-ink-900">
+    <footer className="mt-24 border-t border-ink-600/50 bg-ink-900 bg-madera">
       <div className="seccion grid gap-10 py-14 md:grid-cols-3">
         <div>
           <p className="font-display text-xl font-bold text-cream">{NEGOCIO.nombre}</p>

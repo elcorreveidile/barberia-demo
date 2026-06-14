@@ -33,6 +33,7 @@ export default function CitasPage() {
   const [profesionales, setProfesionales] = useState<Profesional[]>([]);
   const [servicios, setServicios] = useState<Servicio[]>([]);
   const [creando, setCreando] = useState(false);
+  const [moviendo, setMoviendo] = useState<CitaRow | null>(null);
 
   const cargar = useCallback(async () => {
     setCargando(true);
@@ -117,12 +118,20 @@ export default function CitasPage() {
                     {profesional.nombre} · {servicio.duracionMin}min · {cita.clienteTelefono}
                   </p>
                 </div>
-                <button
-                  onClick={() => cancelar(cita.id)}
-                  className="text-xs text-red-300/80 hover:text-red-200"
-                >
-                  Cancelar
-                </button>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => setMoviendo({ cita, servicio, profesional })}
+                    className="text-xs text-cream/60 hover:text-copper"
+                  >
+                    Mover
+                  </button>
+                  <button
+                    onClick={() => cancelar(cita.id)}
+                    className="text-xs text-red-300/80 hover:text-red-200"
+                  >
+                    Cancelar
+                  </button>
+                </div>
               </li>
             ))}
           </ul>
@@ -141,6 +150,86 @@ export default function CitasPage() {
           }}
         />
       )}
+
+      {moviendo && (
+        <ModalMover
+          cita={moviendo}
+          onClose={() => setMoviendo(null)}
+          onMovida={() => {
+            setMoviendo(null);
+            cargar();
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+function ModalMover({
+  cita,
+  onClose,
+  onMovida,
+}: {
+  cita: CitaRow;
+  onClose: () => void;
+  onMovida: () => void;
+}) {
+  const inicio = new Date(cita.cita.inicio);
+  const isoFecha = `${inicio.getFullYear()}-${String(inicio.getMonth() + 1).padStart(2, "0")}-${String(inicio.getDate()).padStart(2, "0")}`;
+  const isoHora = `${String(inicio.getHours()).padStart(2, "0")}:${String(inicio.getMinutes()).padStart(2, "0")}`;
+  const [fecha, setFecha] = useState(isoFecha);
+  const [hora, setHora] = useState(isoHora);
+  const [error, setError] = useState<string | null>(null);
+  const [guardando, setGuardando] = useState(false);
+
+  async function guardar() {
+    setError(null);
+    setGuardando(true);
+    try {
+      const nuevoInicio = new Date(`${fecha}T${hora}:00`);
+      const r = await fetch(`/api/dashboard/citas/${cita.cita.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ inicio: nuevoInicio.toISOString() }),
+      });
+      const d = await r.json();
+      if (!r.ok) {
+        setError(d.error ?? "No se pudo mover la cita.");
+        return;
+      }
+      onMovida();
+    } finally {
+      setGuardando(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-0 sm:items-center sm:p-4">
+      <div className="w-full max-w-md rounded-t-2xl border border-ink-600/60 bg-ink-800 p-6 sm:rounded-2xl">
+        <h2 className="titulo-display text-xl">Mover cita</h2>
+        <p className="mt-1 text-sm text-cream/55">
+          {cita.cita.clienteNombre} · {cita.servicio.nombre} · {cita.profesional.nombre}
+        </p>
+        <div className="mt-4 grid grid-cols-2 gap-3">
+          <label className="block">
+            <span className="text-sm text-cream/70">Día</span>
+            <input type="date" value={fecha} onChange={(e) => setFecha(e.target.value)}
+              className="mt-1 w-full rounded-md border border-ink-600/60 bg-ink-900 px-3 py-2 text-cream" />
+          </label>
+          <label className="block">
+            <span className="text-sm text-cream/70">Hora</span>
+            <input type="time" value={hora} onChange={(e) => setHora(e.target.value)}
+              className="mt-1 w-full rounded-md border border-ink-600/60 bg-ink-900 px-3 py-2 text-cream" />
+          </label>
+        </div>
+        {error && <p className="mt-3 rounded bg-red-900/40 px-3 py-2 text-sm text-red-200">{error}</p>}
+        <div className="mt-5 flex gap-3">
+          <button onClick={onClose} className="btn-ghost flex-1 py-2">Cancelar</button>
+          <button onClick={guardar} disabled={guardando} className="btn-copper flex-1 py-2">
+            {guardando ? "Guardando…" : "Mover"}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

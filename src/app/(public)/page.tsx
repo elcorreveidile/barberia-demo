@@ -18,11 +18,11 @@ export default async function Home() {
       {/* HERO */}
       <section className="relative isolate overflow-hidden">
         <Image
-          src="https://images.unsplash.com/photo-1585747860715-2ba37e788b70?w=1600&q=80"
-          alt="Interior de barbería"
+          src="/imagenes/barberia-hero.jpg"
+          alt="Interior de Filo Barber Studio"
           fill
           priority
-          className="object-cover opacity-30"
+          className="object-cover opacity-40"
         />
         <div className="absolute inset-0 bg-gradient-to-b from-ink/70 via-ink/85 to-ink" />
         <div className="seccion relative flex min-h-[78vh] flex-col items-start justify-center py-24">
@@ -89,6 +89,26 @@ export default async function Home() {
           </div>
         </section>
       )}
+
+      {/* BANDA DE ACENTO */}
+      <section className="relative my-12 h-[300px] overflow-hidden sm:h-[380px]">
+        <Image
+          src="/imagenes/afeitado.jpg"
+          alt="Afeitado a navaja en Filo Barber Studio"
+          fill
+          className="object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-ink via-ink/60 to-transparent" />
+        <div className="seccion relative flex h-full flex-col justify-center">
+          <p className="etiqueta">Oficio</p>
+          <h2 className="titulo-display mt-2 max-w-md text-3xl sm:text-4xl">
+            Afeitado a navaja con ritual de toalla caliente
+          </h2>
+          <p className="mt-3 max-w-sm text-cream/70">
+            La tradición de siempre, con el cuidado de hoy.
+          </p>
+        </div>
+      </section>
 
       {/* CTA FINAL */}
       <section className="seccion py-16">

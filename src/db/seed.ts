@@ -18,16 +18,14 @@ async function main() {
         nombre: "Marco Ferreira",
         rol: "Barbero",
         bio: "Especialista en cortes clásicos y modernos, arreglo de barba y afeitado a navaja con ritual de toalla caliente. Más de 12 años tras el sillón.",
-        fotoUrl:
-          "https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=600&q=80",
+        fotoUrl: "/equipo/barbero.jpg",
         orden: 1,
       },
       {
         nombre: "Lucía Hernández",
         rol: "Esteticista",
         bio: "Diseño de cejas, color y mechas, tratamientos faciales y depilación. Mirada precisa y trato cercano.",
-        fotoUrl:
-          "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=600&q=80",
+        fotoUrl: "/equipo/esteticista.jpg",
         orden: 2,
       },
     ])

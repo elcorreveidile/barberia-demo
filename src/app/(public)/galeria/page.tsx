@@ -4,6 +4,11 @@ export const metadata = { title: "Galería" };
 
 // Trabajos de muestra (placeholder). Sustituye por fotos reales del local.
 const fotos = [
+  "/imagenes/ritual.jpg",
+  "/imagenes/retrato.jpg",
+  "/imagenes/afeitado.jpg",
+  "/imagenes/escena.jpg",
+  "/imagenes/barberia-hero.jpg",
   "https://images.unsplash.com/photo-1599351431202-1e0f0137899a?w=600&q=80",
   "https://images.unsplash.com/photo-1503443207922-dff7d543fd0e?w=600&q=80",
   "https://images.unsplash.com/photo-1521590832167-7bcbfaa6381f?w=600&q=80",

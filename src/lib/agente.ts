@@ -204,6 +204,27 @@ async function ejecutarHerramienta(
   }
 }
 
+// Devuelve el historial empezando en el primer mensaje de USUARIO que no sea
+// un tool_result. Evita el error 400 de la API cuando un recorte deja un
+// tool_result "huérfano" al principio (sin su tool_use previo). También repara
+// conversaciones ya guardadas en ese estado.
+function empiezaEnTurnoLimpio(
+  h: Anthropic.MessageParam[]
+): Anthropic.MessageParam[] {
+  let i = 0;
+  while (i < h.length) {
+    const m = h[i];
+    const esToolResult =
+      Array.isArray(m.content) &&
+      m.content.some(
+        (b) => b && typeof b === "object" && (b as { type?: string }).type === "tool_result"
+      );
+    if (m.role === "user" && !esToolResult) break;
+    i++;
+  }
+  return h.slice(i);
+}
+
 function sistema(): string {
   const hoy = hoyMadrid();
   const p = partesMadrid(new Date());
@@ -251,9 +272,11 @@ export async function responderWhatsApp(opts: {
     .from(schema.conversaciones)
     .where(eq(schema.conversaciones.telefono, telefono));
 
-  const historial: Anthropic.MessageParam[] = Array.isArray(conv?.historial)
-    ? (conv!.historial as Anthropic.MessageParam[])
-    : [];
+  const historial: Anthropic.MessageParam[] = empiezaEnTurnoLimpio(
+    Array.isArray(conv?.historial)
+      ? (conv!.historial as Anthropic.MessageParam[])
+      : []
+  );
   // Guardamos el teléfono limpio (+34…) en las citas y lo usamos para buscar
   // citas del cliente; el "telefono" con prefijo whatsapp: solo identifica la
   // conversación y se usa para responder por Twilio.
@@ -327,7 +350,7 @@ export async function responderWhatsApp(opts: {
   }
 
   // Persiste el historial actualizado (recortado para no crecer sin límite).
-  const historialRecortado = historial.slice(-24);
+  const historialRecortado = empiezaEnTurnoLimpio(historial.slice(-24));
   await db
     .insert(schema.conversaciones)
     .values({

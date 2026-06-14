@@ -49,7 +49,7 @@ const HERRAMIENTAS: Anthropic.Tool[] = [
         nombre: { type: "string", description: "Nombre del cliente." },
         email: {
           type: "string",
-          description: "Email del cliente (opcional) para enviarle confirmación por correo.",
+          description: "Email del cliente, si te lo ha facilitado. Si el cliente te ha dado un correo en la conversación, DEBES incluirlo aquí (no lo omitas).",
         },
       },
       required: ["servicio", "profesional", "fecha_hora", "nombre"],
@@ -228,8 +228,9 @@ Flujo recomendado:
 2. Si no especifica profesional, ofrece según quién haga ese servicio.
 3. Consulta disponibilidad real con la herramienta y propón 2-3 huecos concretos.
 4. Pide el nombre si no lo tienes. Ofrece (opcional) enviarle confirmación por email: si quiere, pídele el correo; si no, no insistas. No hace falta pedir el teléfono (usamos su número de WhatsApp).
+   IMPORTANTE: si el cliente te da un email, recuérdalo y, al llamar a reservar_cita, pásalo SIEMPRE en el parámetro email de la herramienta. No lo pidas para luego omitirlo.
 5. ANTES de reservar, resume en una línea bien clara y pide un "sí" explícito:
-   «Servicio (precio, duración) · profesional · día · hora».
+   «Servicio (precio, duración) · profesional · día · hora» (añade «· confirmación a EMAIL» si te dio correo).
    No llames a reservar_cita hasta que el cliente confirme ESE resumen. Si cambia algo, vuelve a resumir.
 6. Tras reservar, confirma con un mensaje claro.
 

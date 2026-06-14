@@ -1,6 +1,8 @@
 import { enviarAvisoNegocio } from "./email";
 import { enviarWhatsApp } from "./twilio";
 
+export type AccionCita = "nueva" | "movida" | "cancelada";
+
 export interface AvisoCita {
   servicio: string;
   profesional: string;
@@ -11,27 +13,29 @@ export interface AvisoCita {
   origen: string;
 }
 
-// Avisa al negocio de una cita nueva por email y/o WhatsApp (lo que esté
-// configurado). Pensado para llamarse en segundo plano (fire-and-forget).
-export async function avisarNuevaCita(c: AvisoCita) {
-  // Destinatario del email de aviso: EMAIL_AVISOS, o el primer ADMIN_EMAILS.
+const ENCABEZADO: Record<AccionCita, string> = {
+  nueva: "📅 Nueva cita",
+  movida: "🔄 Cita reprogramada",
+  cancelada: "❌ Cita cancelada",
+};
+
+// Avisa al negocio (email y/o WhatsApp) de un cambio en una cita.
+async function avisar(c: AvisoCita, accion: AccionCita) {
   const emailDestino =
     (process.env.EMAIL_AVISOS || process.env.ADMIN_EMAILS || "")
       .split(",")[0]
       .trim();
 
   if (emailDestino) {
-    await enviarAvisoNegocio(emailDestino, c).catch((e) =>
+    await enviarAvisoNegocio(emailDestino, c, accion).catch((e) =>
       console.error("Error en email de aviso al negocio:", e)
     );
   }
 
-  // Aviso por WhatsApp al móvil del barbero (opcional). En el sandbox de
-  // Twilio, ese número debe haber hecho el "join" para poder recibirlo.
-  const waDestino = process.env.WHATSAPP_AVISOS_TO; // formato whatsapp:+34...
+  const waDestino = process.env.WHATSAPP_AVISOS_TO; // whatsapp:+34...
   if (waDestino) {
     const texto =
-      `📅 Nueva cita (${c.origen})\n` +
+      `${ENCABEZADO[accion]} (${c.origen})\n` +
       `${c.servicio} con ${c.profesional}\n` +
       `${c.cuando}\n` +
       `${c.clienteNombre} · ${c.clienteTelefono}`;
@@ -40,3 +44,7 @@ export async function avisarNuevaCita(c: AvisoCita) {
     );
   }
 }
+
+export const avisarNuevaCita = (c: AvisoCita) => avisar(c, "nueva");
+export const avisarCitaActualizada = (c: AvisoCita, accion: AccionCita) =>
+  avisar(c, accion);

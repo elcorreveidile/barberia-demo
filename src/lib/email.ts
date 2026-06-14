@@ -70,6 +70,41 @@ export async function enviarEnlaceCitas(para: string, enlace: string) {
   });
 }
 
+export async function enviarAvisoNegocio(
+  para: string,
+  c: {
+    servicio: string;
+    profesional: string;
+    cuando: string;
+    clienteNombre: string;
+    clienteTelefono: string;
+    clienteEmail: string | null;
+    origen: string;
+  }
+) {
+  const cli = cliente();
+  const cuerpo = `
+    <p style="color:#cfc7ba;line-height:1.6;">Nueva cita reservada (vía <b>${c.origen}</b>):</p>
+    <table style="width:100%;color:#F5F0E6;border-collapse:collapse;margin:16px 0;">
+      <tr><td style="padding:6px 0;color:#8a8178;">Servicio</td><td style="text-align:right;">${c.servicio}</td></tr>
+      <tr><td style="padding:6px 0;color:#8a8178;">Profesional</td><td style="text-align:right;">${c.profesional}</td></tr>
+      <tr><td style="padding:6px 0;color:#8a8178;">Cuándo</td><td style="text-align:right;color:#B68D40;font-weight:700;">${c.cuando}</td></tr>
+      <tr><td style="padding:6px 0;color:#8a8178;">Cliente</td><td style="text-align:right;">${c.clienteNombre}</td></tr>
+      <tr><td style="padding:6px 0;color:#8a8178;">Teléfono</td><td style="text-align:right;">${c.clienteTelefono}</td></tr>
+      ${c.clienteEmail ? `<tr><td style="padding:6px 0;color:#8a8178;">Email</td><td style="text-align:right;">${c.clienteEmail}</td></tr>` : ""}
+    </table>`;
+  if (!cli) {
+    console.log(`\n[EMAIL omitido — sin RESEND_API_KEY]\nAviso al negocio (${para}): ${c.servicio} · ${c.cuando} · ${c.clienteNombre}\n`);
+    return;
+  }
+  await cli.emails.send({
+    from: FROM(),
+    to: para,
+    subject: `Nueva cita · ${c.cuando} · ${c.clienteNombre}`,
+    html: marco("Nueva cita", cuerpo),
+  });
+}
+
 export async function enviarConfirmacionCita(opts: {
   para: string;
   nombre: string;

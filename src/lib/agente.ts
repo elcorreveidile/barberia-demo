@@ -258,6 +258,71 @@ Flujo recomendado:
 Si el cliente pide algo que no puedes resolver (queja, producto que no existe, caso raro), dilo con sinceridad e indica que un compañero le atenderá. Responde siempre en texto plano para WhatsApp, sin markdown.`;
 }
 
+// ¿El error de la API se debe a un historial inválido (pares tool_use/tool_result
+// rotos, orden de mensajes, etc.)? En ese caso reseteamos y reintentamos.
+function esErrorDeHistorial(e: unknown): boolean {
+  const err = e as { status?: number; message?: string };
+  if (err?.status !== 400) return false;
+  return /tool_result|tool_use|messages\.|unexpected|must have a corresponding/i.test(
+    err?.message ?? ""
+  );
+}
+
+// Ejecuta el bucle de tool use sobre `historial` (lo va ampliando) y devuelve
+// el texto final para el cliente.
+async function correrAgente(
+  client: Anthropic,
+  ctx: { telefono: string; nombreCliente: string | null },
+  historial: Anthropic.MessageParam[]
+): Promise<string> {
+  for (let i = 0; i < 8; i++) {
+    const respuesta = await client.messages.create({
+      model: MODELO,
+      max_tokens: 2048,
+      thinking: { type: "adaptive" },
+      system: sistema(),
+      tools: HERRAMIENTAS,
+      messages: historial,
+    });
+
+    if (respuesta.stop_reason === "refusal") {
+      return "Lo siento, no puedo ayudarte con eso. Te atenderá un compañero en cuanto pueda.";
+    }
+
+    // Guardamos el turno completo del asistente (incluye bloques de thinking,
+    // que deben devolverse sin modificar en el mismo modelo).
+    historial.push({ role: "assistant", content: respuesta.content });
+
+    if (respuesta.stop_reason === "tool_use") {
+      const resultados: Anthropic.ToolResultBlockParam[] = [];
+      for (const bloque of respuesta.content) {
+        if (bloque.type === "tool_use") {
+          const salida = await ejecutarHerramienta(
+            bloque.name,
+            (bloque.input ?? {}) as Record<string, unknown>,
+            ctx
+          );
+          resultados.push({
+            type: "tool_result",
+            tool_use_id: bloque.id,
+            content: salida,
+          });
+        }
+      }
+      historial.push({ role: "user", content: resultados });
+      continue; // vuelve a llamar al modelo con los resultados
+    }
+
+    // Respuesta normal: extrae el texto.
+    return respuesta.content
+      .filter((b): b is Anthropic.TextBlock => b.type === "text")
+      .map((b) => b.text)
+      .join("\n")
+      .trim();
+  }
+  return ""; // se traduce a un mensaje de cortesía en el llamador
+}
+
 // Procesa un mensaje entrante y devuelve la respuesta de texto a enviar.
 export async function responderWhatsApp(opts: {
   telefono: string;
@@ -288,54 +353,21 @@ export async function responderWhatsApp(opts: {
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
   let textoFinal = "";
-  // Bucle de tool use (máximo de seguridad para no quedar en bucle).
-  for (let i = 0; i < 8; i++) {
-    const respuesta = await client.messages.create({
-      model: MODELO,
-      max_tokens: 2048,
-      thinking: { type: "adaptive" },
-      system: sistema(),
-      tools: HERRAMIENTAS,
-      messages: historial,
-    });
-
-    if (respuesta.stop_reason === "refusal") {
-      textoFinal =
-        "Lo siento, no puedo ayudarte con eso. Te atenderá un compañero en cuanto pueda.";
-      break;
+  try {
+    textoFinal = await correrAgente(client, ctx, historial);
+  } catch (e) {
+    // Autorreparación: si Claude rechaza el historial (p. ej. un par
+    // tool_use/tool_result roto), empezamos la conversación de cero con solo
+    // el mensaje actual y reintentamos una vez. Así un número con historial
+    // corrupto no se queda "mudo" para siempre.
+    if (esErrorDeHistorial(e)) {
+      console.warn("Historial inválido; reseteando conversación y reintentando.");
+      historial.length = 0;
+      historial.push({ role: "user", content: mensaje });
+      textoFinal = await correrAgente(client, ctx, historial);
+    } else {
+      throw e;
     }
-
-    // Guardamos el turno completo del asistente (incluye bloques de thinking,
-    // que deben devolverse sin modificar en el mismo modelo).
-    historial.push({ role: "assistant", content: respuesta.content });
-
-    if (respuesta.stop_reason === "tool_use") {
-      const resultados: Anthropic.ToolResultBlockParam[] = [];
-      for (const bloque of respuesta.content) {
-        if (bloque.type === "tool_use") {
-          const salida = await ejecutarHerramienta(
-            bloque.name,
-            (bloque.input ?? {}) as Record<string, unknown>,
-            ctx
-          );
-          resultados.push({
-            type: "tool_result",
-            tool_use_id: bloque.id,
-            content: salida,
-          });
-        }
-      }
-      historial.push({ role: "user", content: resultados });
-      continue; // vuelve a llamar al modelo con los resultados
-    }
-
-    // Respuesta normal: extrae el texto.
-    textoFinal = respuesta.content
-      .filter((b): b is Anthropic.TextBlock => b.type === "text")
-      .map((b) => b.text)
-      .join("\n")
-      .trim();
-    break;
   }
 
   if (!textoFinal) {

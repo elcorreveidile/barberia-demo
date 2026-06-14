@@ -3,6 +3,9 @@ import { responderWhatsApp } from "@/lib/agente";
 import { enviarWhatsApp } from "@/lib/twilio";
 
 export const dynamic = "force-dynamic";
+// Damos margen a la función: el agente hace varias llamadas a Claude (con
+// thinking + herramientas) por mensaje. Sin esto, podría cortarse a medias.
+export const maxDuration = 60;
 
 // Respuesta TwiML vacía: le dice a Twilio "no envíes nada como respuesta del
 // webhook". El mensaje real al cliente ya se envía por la API de Twilio
@@ -24,10 +27,10 @@ function twimlVacio() {
 // exige verificación del webhook (GET con hub.challenge) y validación de firma
 // (X-Hub-Signature-256). Ver README, sección "Pasar a producción".
 export async function POST(req: NextRequest) {
+  let from = "";
+  let body = "";
   try {
     const contentType = req.headers.get("content-type") || "";
-    let from = "";
-    let body = "";
 
     if (contentType.includes("application/json")) {
       // Estructura de Meta WhatsApp Cloud API.
@@ -55,6 +58,13 @@ export async function POST(req: NextRequest) {
     return twimlVacio();
   } catch (e) {
     console.error("Error en webhook de WhatsApp:", e);
+    // Que el cliente NUNCA se quede sin respuesta: mensaje de cortesía.
+    if (from) {
+      await enviarWhatsApp(
+        from,
+        "Uy, ahora mismo no puedo procesar tu mensaje 🙈. Inténtalo de nuevo en un momento; si sigue fallando, te atenderá una persona del equipo."
+      ).catch((err) => console.error("Error enviando mensaje de cortesía:", err));
+    }
     // Devolvemos 200 para que Twilio no reintente en bucle.
     return twimlVacio();
   }

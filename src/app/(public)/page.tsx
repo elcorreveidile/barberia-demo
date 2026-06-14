@@ -22,9 +22,10 @@ export default async function Home() {
           alt="Interior de Filo Barber Studio"
           fill
           priority
-          className="object-cover opacity-40"
+          className="object-cover opacity-80"
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-ink/70 via-ink/85 to-ink" />
+        <div className="absolute inset-0 bg-gradient-to-r from-ink/85 via-ink/45 to-ink/10" />
+        <div className="absolute inset-0 bg-gradient-to-t from-ink via-ink/20 to-transparent" />
         <div className="seccion relative flex min-h-[78vh] flex-col items-start justify-center py-24">
           <p className="etiqueta">{NEGOCIO.ciudad} · Barbería &amp; estética masculina</p>
           <h1 className="titulo-display mt-4 max-w-3xl text-5xl leading-[1.05] sm:text-6xl md:text-7xl">

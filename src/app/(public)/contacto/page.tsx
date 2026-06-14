@@ -1,12 +1,12 @@
 import Link from "next/link";
-import { NEGOCIO, HORARIO } from "@/lib/negocio";
+import { NEGOCIO, HORARIO, enlaceWhatsApp } from "@/lib/negocio";
 
 export const metadata = { title: "Contacto" };
 
 const DIAS = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
 
 export default function ContactoPage() {
-  const waHref = `https://wa.me/${NEGOCIO.whatsapp.replace(/\D/g, "")}`;
+  const waHref = enlaceWhatsApp();
   const mapsQuery = encodeURIComponent(`${NEGOCIO.direccion}`);
 
   return (

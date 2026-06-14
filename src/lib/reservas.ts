@@ -2,6 +2,7 @@ import { and, eq, gte, ne } from "drizzle-orm";
 import { getDb, schema } from "@/db";
 import { dentroDeHorario } from "./disponibilidad";
 import { enviarConfirmacionCita } from "./email";
+import { avisarNuevaCita } from "./avisos";
 import { formatoLargo } from "./fecha";
 
 export type ResultadoReserva =
@@ -69,19 +70,35 @@ export async function crearCita(opts: {
       })
       .returning({ id: schema.citas.id });
 
+    const [prof] = await db
+      .select()
+      .from(schema.profesionales)
+      .where(eq(schema.profesionales.id, opts.profesionalId));
+    const cuando = formatoLargo(opts.inicio);
+
+    // Confirmación al cliente (solo si hay email). No bloquea la reserva.
     if (opts.enviarEmail && opts.clienteEmail) {
-      const [prof] = await db
-        .select()
-        .from(schema.profesionales)
-        .where(eq(schema.profesionales.id, opts.profesionalId));
-      // No bloqueamos la reserva si falla el email.
       enviarConfirmacionCita({
         para: opts.clienteEmail,
         nombre: opts.clienteNombre,
         servicio: servicio.nombre,
         profesional: prof?.nombre ?? "",
-        cuando: formatoLargo(opts.inicio),
+        cuando,
       }).catch((e) => console.error("Error enviando email de confirmación:", e));
+    }
+
+    // Aviso al negocio en cada cita nueva, salvo las creadas desde el panel
+    // (esas las hace el propio negocio). No bloquea la reserva.
+    if ((opts.origen ?? "web") !== "panel") {
+      avisarNuevaCita({
+        servicio: servicio.nombre,
+        profesional: prof?.nombre ?? "",
+        cuando,
+        clienteNombre: opts.clienteNombre,
+        clienteTelefono: opts.clienteTelefono,
+        clienteEmail: opts.clienteEmail ?? null,
+        origen: opts.origen ?? "web",
+      }).catch((e) => console.error("Error avisando al negocio:", e));
     }
 
     return { ok: true, citaId: cita.id };

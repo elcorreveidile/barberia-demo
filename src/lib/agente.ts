@@ -47,6 +47,10 @@ const HERRAMIENTAS: Anthropic.Tool[] = [
         profesional: { type: "string" },
         fecha_hora: { type: "string", description: "YYYY-MM-DDTHH:MM" },
         nombre: { type: "string", description: "Nombre del cliente." },
+        email: {
+          type: "string",
+          description: "Email del cliente (opcional) para enviarle confirmación por correo.",
+        },
       },
       required: ["servicio", "profesional", "fecha_hora", "nombre"],
     },
@@ -159,13 +163,16 @@ async function ejecutarHerramienta(
         const inicio = parseMadridLocal(String(input.fecha_hora ?? ""));
         if (!inicio) return "fecha_hora inválida, usa YYYY-MM-DDTHH:MM.";
 
+        const emailCliente = input.email ? String(input.email).trim() : null;
         const res = await crearCita({
           servicioId: servicio.id,
           profesionalId: prof.id,
           inicio,
           clienteNombre: String(input.nombre ?? ctx.nombreCliente ?? "Cliente WhatsApp"),
           clienteTelefono: ctx.telefono,
+          clienteEmail: emailCliente,
           origen: "whatsapp",
+          enviarEmail: !!emailCliente,
         });
         if (!res.ok) return `No se pudo reservar (${res.motivo}): ${res.mensaje}`;
         return `RESERVA CONFIRMADA: ${servicio.nombre} con ${prof.nombre} el ${formatoLargo(inicio)}. (id ${res.citaId})`;
@@ -217,11 +224,13 @@ Franjas (interprétalas así):
 IMPORTANTE sobre las franjas: si el cliente pide una franja en la que el negocio está cerrado (p. ej. "el sábado por la tarde" o "el domingo"), DÍSELO claramente ("los sábados solo abrimos por la mañana") y ofrece la alternativa real más cercana; NO cambies de franja en silencio. Cuando consultes disponibilidad, ofrece huecos que de verdad caigan en la franja pedida si existe.
 
 Flujo recomendado:
-1. Entiende qué servicio quiere (si dice "corte y barba", mapea al servicio más cercano del catálogo).
+1. Entiende qué servicio quiere. OJO: no des por hecho extras. Si la petición es ambigua sobre el servicio (p. ej. "corte y barba" puede ser solo corte, o "Corte + arreglo de barba"), PREGUNTA cuál quiere antes de seguir; no añadas la barba (ni ningún extra) por tu cuenta.
 2. Si no especifica profesional, ofrece según quién haga ese servicio.
 3. Consulta disponibilidad real con la herramienta y propón 2-3 huecos concretos.
-4. Pide el nombre si no lo tienes.
-5. Confirma servicio + profesional + día + hora con el cliente y SOLO entonces llama a reservar_cita.
+4. Pide el nombre si no lo tienes. Ofrece (opcional) enviarle confirmación por email: si quiere, pídele el correo; si no, no insistas. No hace falta pedir el teléfono (usamos su número de WhatsApp).
+5. ANTES de reservar, resume en una línea bien clara y pide un "sí" explícito:
+   «Servicio (precio, duración) · profesional · día · hora».
+   No llames a reservar_cita hasta que el cliente confirme ESE resumen. Si cambia algo, vuelve a resumir.
 6. Tras reservar, confirma con un mensaje claro.
 
 Si el cliente pide algo que no puedes resolver (queja, producto que no existe, caso raro), dilo con sinceridad e indica que un compañero le atenderá. Responde siempre en texto plano para WhatsApp, sin markdown.`;
@@ -244,7 +253,11 @@ export async function responderWhatsApp(opts: {
   const historial: Anthropic.MessageParam[] = Array.isArray(conv?.historial)
     ? (conv!.historial as Anthropic.MessageParam[])
     : [];
-  const ctx = { telefono, nombreCliente: conv?.nombreCliente ?? null };
+  // Guardamos el teléfono limpio (+34…) en las citas y lo usamos para buscar
+  // citas del cliente; el "telefono" con prefijo whatsapp: solo identifica la
+  // conversación y se usa para responder por Twilio.
+  const telefonoLimpio = telefono.replace(/^whatsapp:/i, "").trim();
+  const ctx = { telefono: telefonoLimpio, nombreCliente: conv?.nombreCliente ?? null };
 
   historial.push({ role: "user", content: mensaje });
 

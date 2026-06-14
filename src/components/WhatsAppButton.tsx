@@ -1,10 +1,7 @@
-import { NEGOCIO } from "@/lib/negocio";
+import { enlaceWhatsApp } from "@/lib/negocio";
 
 export default function WhatsAppButton() {
-  const texto = encodeURIComponent(
-    "Hola, me gustaría reservar una cita en Filo Barber Studio."
-  );
-  const href = `https://wa.me/${NEGOCIO.whatsapp.replace(/\D/g, "")}?text=${texto}`;
+  const href = enlaceWhatsApp();
   return (
     <a
       href={href}
